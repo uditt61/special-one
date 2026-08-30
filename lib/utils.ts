@@ -16,6 +16,55 @@ export function generateSlug(): string {
   return result;
 }
 
+// Universal, robust clipboard copy function with automatic execCommand fallback
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (!text) return false;
+
+  // 1. Try modern Async Clipboard API if available and supported in current context
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === 'function'
+  ) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('navigator.clipboard.writeText failed, using execCommand fallback:', err);
+    }
+  }
+
+  // 2. Fallback for non-HTTPS, HTTP, iframe, webviews, and older browser environments
+  if (typeof document !== 'undefined') {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.top = '0';
+      textarea.style.left = '0';
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (successful) return true;
+    } catch (err) {
+      console.error('Fallback execCommand copy failed:', err);
+    }
+  }
+
+  return false;
+}
+
+// Helper to construct WhatsApp share link
+export function getWhatsAppShareUrl(text: string, url: string): string {
+  const message = encodeURIComponent(`${text}\n${url}`);
+  return `https://api.whatsapp.com/send?text=${message}`;
+}
+
+
 const DRAFT_KEY = 'special_one_gift_draft_v1';
 const LOCAL_GIFTS_KEY = 'special_one_saved_gifts_v1';
 

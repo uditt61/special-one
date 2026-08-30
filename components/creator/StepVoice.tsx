@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GiftDraft } from '@/types/gift';
 import { Button } from '@/components/ui/Button';
-import { Heart, Mic, Square, Play, Pause, Trash2, RotateCcw, AlertCircle } from 'lucide-react';
+import { Heart, Mic, Square, Play, Pause, Trash2, RotateCcw, AlertCircle, Upload } from 'lucide-react';
 
 interface StepVoiceProps {
   draft: GiftDraft;
@@ -51,13 +51,38 @@ export const StepVoice: React.FC<StepVoiceProps> = ({
     audioChunksRef.current = [];
 
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setMicError('Audio recording is not supported in this browser.');
+      if (typeof window === 'undefined' || !navigator?.mediaDevices?.getUserMedia) {
+        setMicError(
+          'Live microphone recording requires a secure connection (HTTPS) or a supported mobile browser. You can record using your phone\'s Voice Memos app and upload the audio file below!'
+        );
         return;
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+
+      // Determine best supported MIME type for current browser (especially iOS Safari vs Chrome Android)
+      let options: MediaRecorderOptions | undefined = undefined;
+      let selectedMime = '';
+
+      if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+        const candidateTypes = [
+          'audio/mp4',
+          'audio/aac',
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/wav',
+          'audio/ogg',
+        ];
+        for (const type of candidateTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            selectedMime = type;
+            options = { mimeType: type };
+            break;
+          }
+        }
+      }
+
+      const mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -67,7 +92,8 @@ export const StepVoice: React.FC<StepVoiceProps> = ({
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
+        const mimeType = mediaRecorder.mimeType || selectedMime || 'audio/mp4';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64Audio = reader.result as string;
@@ -99,10 +125,43 @@ export const StepVoice: React.FC<StepVoiceProps> = ({
     } catch (err: any) {
       console.warn('Microphone permission error:', err);
       setMicError(
-        'Microphone access was not granted. You can still proceed without a voice note, or enable permissions in browser settings.'
+        'Microphone access was denied or not supported in this connection context. You can upload an audio file directly using the button below!'
       );
       setIsRecording(false);
     }
+  };
+
+  const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      setMicError('Audio file size exceeds 15MB limit.');
+      return;
+    }
+
+    setMicError(null);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Audio = reader.result as string;
+
+      // Estimate audio duration
+      const tempAudio = new Audio(base64Audio);
+      tempAudio.onloadedmetadata = () => {
+        const dur = Math.round(tempAudio.duration) || 15;
+        updateDraft({
+          voiceMessageUrl: base64Audio,
+          voiceDuration: dur,
+        });
+      };
+      tempAudio.onerror = () => {
+        updateDraft({
+          voiceMessageUrl: base64Audio,
+          voiceDuration: 15,
+        });
+      };
+    };
+    reader.readAsDataURL(file);
   };
 
   const stopRecording = () => {
@@ -175,7 +234,7 @@ export const StepVoice: React.FC<StepVoiceProps> = ({
           Say it out loud.
         </h1>
         <p className="text-sm text-[#834758] max-w-md mx-auto">
-          Hearing your voice makes this moment unforgettable. Record up to 45 seconds of your thoughts, an inside joke, or a tender wish.
+          Hearing your voice makes this moment unforgettable. Record up to 45 seconds or upload an audio note.
         </p>
       </div>
 
@@ -186,14 +245,14 @@ export const StepVoice: React.FC<StepVoiceProps> = ({
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-800 space-y-1">
-              <p className="font-semibold">Microphone Notice</p>
+              <p className="font-semibold">Microphone & Audio Guidance</p>
               <p>{micError}</p>
             </div>
           </div>
         )}
 
         {!draft.voiceMessageUrl && !isRecording && (
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-2">
             <motion.button
               type="button"
               whileHover={{ scale: 1.05 }}
@@ -204,9 +263,26 @@ export const StepVoice: React.FC<StepVoiceProps> = ({
               <Mic className="w-8 h-8 sm:w-10 sm:h-10 mb-1" />
               <span className="text-[11px] font-semibold tracking-wider uppercase">Record</span>
             </motion.button>
+
             <p className="text-xs text-[#834758]">
-              Tap above to start recording (Optional • Max 45s)
+              Tap above to record live (Max 45s)
             </p>
+
+            {/* Audio File Upload Fallback option for mobile phones */}
+            <div className="pt-2 border-t border-[#FED7E2]/60">
+              <label className="block w-full cursor-pointer">
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleAudioFileUpload}
+                  className="hidden"
+                />
+                <div className="p-3.5 rounded-2xl border border-dashed border-[#FF4D79]/40 bg-[#FFF0F3]/60 hover:bg-[#FFF0F3] text-[#4A1525] text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer">
+                  <Upload className="w-4 h-4 text-[#FF4D79]" />
+                  <span>Upload Audio File / Voice Memo</span>
+                </div>
+              </label>
+            </div>
           </div>
         )}
 

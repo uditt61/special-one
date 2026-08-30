@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Upload, Trash2, CheckCircle2, Copy, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Sparkles, Upload, Trash2, CheckCircle2, Copy, ExternalLink, Share2, MessageCircle } from 'lucide-react';
 import { FloatingHearts } from '@/components/ui/FloatingHearts';
 import { Gift, Photo } from '@/types/gift';
-import { generateSlug, saveLocalGift, compressImage } from '@/lib/utils';
+import { generateSlug, saveLocalGift, compressImage, copyToClipboard, getWhatsAppShareUrl } from '@/lib/utils';
 import { saveGiftToStorage } from '@/lib/supabase';
 
 const MONTHS = [
@@ -158,12 +158,30 @@ export default function BirthdayCreatorPage() {
     ? `${window.location.origin}/gift/${createdSlug}`
     : `/gift/${createdSlug}`;
 
-  const copyLink = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareUrl);
+  const copyLink = async () => {
+    if (!shareUrl) return;
+    const success = await copyToClipboard(shareUrl);
+    if (success) {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
     }
+  };
+
+  const handleNativeShare = async () => {
+    if (!shareUrl) return;
+    if (typeof window !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Happy Birthday ${recipientName || 'Star'}! 🎂`,
+          text: `Open your birthday surprise 🎉`,
+          url: shareUrl,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    await copyLink();
   };
 
   return (
@@ -643,7 +661,8 @@ export default function BirthdayCreatorPage() {
                       type="text"
                       readOnly
                       value={shareUrl}
-                      className="w-full text-xs font-mono bg-transparent text-[#7C2D12] focus:outline-none truncate"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                      className="w-full text-xs font-mono bg-transparent text-[#7C2D12] focus:outline-none truncate cursor-pointer"
                     />
                     <button
                       type="button"
@@ -657,15 +676,35 @@ export default function BirthdayCreatorPage() {
 
                   {/* Action buttons */}
                   <div className="space-y-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleNativeShare}
+                      className="w-full py-4 rounded-full bg-linear-to-r from-[#F97316] to-[#EA580C] text-white font-bold text-sm shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Share with {recipientName || 'Birthday Star'}</span>
+                    </button>
+
+                    <a
+                      href={getWhatsAppShareUrl(`Happy Birthday ${recipientName || 'Birthday Star'}! 🎂 Here is a special surprise for you:`, shareUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3.5 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Share on WhatsApp</span>
+                    </a>
+
                     <a
                       href={`/gift/${createdSlug}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-4 rounded-full bg-linear-to-r from-[#F97316] to-[#EA580C] text-white font-bold text-sm shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-full border border-[#FDBA74] text-[#7C2D12] font-semibold text-xs hover:bg-[#FFF7ED] transition-all flex items-center justify-center gap-2"
                     >
                       <span>Preview Recipient Experience</span>
                       <ExternalLink className="w-4 h-4" />
                     </a>
+
                     <button
                       type="button"
                       onClick={() => router.push('/')}

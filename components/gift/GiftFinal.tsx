@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Gift } from '@/types/gift';
 import { Button } from '@/components/ui/Button';
 import { fireRomanticConfetti } from './Confetti';
+import { copyToClipboard } from '@/lib/utils';
 import { Heart, Sparkles, RotateCcw, Share2, Check } from 'lucide-react';
 
 interface GiftFinalProps {
@@ -29,16 +30,22 @@ export const GiftFinal: React.FC<GiftFinalProps> = ({ gift, onRestart }) => {
     fireRomanticConfetti();
   };
 
-  const handleShareBack = () => {
+  const handleShareBack = async () => {
     if (typeof window === 'undefined') return;
     if (navigator.share) {
-      navigator.share({
-        title: `A special surprise from ${gift.senderName}`,
-        text: `Look at what ${gift.senderName} made for ${gift.recipientName} ❤️`,
-        url: window.location.href,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(window.location.href);
+      try {
+        await navigator.share({
+          title: `A special surprise from ${gift.senderName}`,
+          text: `Look at what ${gift.senderName} made for ${gift.recipientName} ❤️`,
+          url: window.location.href,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    const success = await copyToClipboard(window.location.href);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     }

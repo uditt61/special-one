@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, GiftDraft } from '@/types/gift';
-import { defaultGiftDraft, saveDraft, loadDraft, clearDraft, generateSlug } from '@/lib/utils';
+import { defaultGiftDraft, saveDraft, loadDraft, clearDraft, generateSlug, copyToClipboard, getWhatsAppShareUrl } from '@/lib/utils';
 import { validateStep } from '@/lib/validation';
 import { saveGiftToStorage } from '@/lib/supabase';
 
@@ -24,7 +24,7 @@ import { GiftExperience } from '@/components/gift/GiftExperience';
 import { FloatingHearts } from '@/components/ui/FloatingHearts';
 import { Button } from '@/components/ui/Button';
 import { fireRomanticConfetti } from '@/components/gift/Confetti';
-import { Sparkles, Copy, Check, Share2, ExternalLink, Heart } from 'lucide-react';
+import { Sparkles, Copy, Check, Share2, ExternalLink, Heart, MessageCircle } from 'lucide-react';
 
 const STEP_TITLES = [
   'The Basics',
@@ -130,23 +130,30 @@ export default function CreateGiftPage() {
     ? `${window.location.origin}/gift/${createdSlug}`
     : '';
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     if (!shareUrl) return;
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+    const success = await copyToClipboard(shareUrl);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
   };
 
-  const handleNativeShare = () => {
-    if (typeof window !== 'undefined' && navigator.share && shareUrl) {
-      navigator.share({
-        title: `A special surprise for ${draft.recipientName}`,
-        text: `Open your surprise ❤️`,
-        url: shareUrl,
-      }).catch(() => {});
-    } else {
-      handleCopyLink();
+  const handleNativeShare = async () => {
+    if (!shareUrl) return;
+    if (typeof window !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `A special surprise for ${draft.recipientName || 'you'}`,
+          text: `Open your surprise ❤️`,
+          url: shareUrl,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
     }
+    await handleCopyLink();
   };
 
   // If Creator is in full-screen Preview mode
@@ -335,7 +342,8 @@ export default function CreateGiftPage() {
                   type="text"
                   readOnly
                   value={shareUrl}
-                  className="bg-transparent text-xs text-[#4A1525] font-mono flex-1 focus:outline-none truncate"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="bg-transparent text-xs text-[#4A1525] font-mono flex-1 focus:outline-none truncate cursor-pointer"
                 />
                 <button
                   type="button"
@@ -357,8 +365,18 @@ export default function CreateGiftPage() {
               {/* Modal Buttons */}
               <div className="space-y-2 pt-2">
                 <Button onClick={handleNativeShare} size="lg" fullWidth>
-                  <Share2 className="w-4 h-4 mr-2" /> Share with {draft.recipientName}
+                  <Share2 className="w-4 h-4 mr-2" /> Share with {draft.recipientName || 'Your Love'}
                 </Button>
+
+                <a
+                  href={getWhatsAppShareUrl(`A special surprise for ${draft.recipientName || 'you'} ❤️`, shareUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Share on WhatsApp</span>
+                </a>
 
                 <Link href={`/gift/${createdSlug}`} target="_blank" className="block w-full">
                   <Button variant="outline" size="md" fullWidth>
