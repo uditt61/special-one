@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+    --font-handwritten: var(--font-handwritten), cursive;
+    --font-serif: var(--font-serif), Georgia, serif;
+
+    /* Romantic Default Theme (Blush) */
+    --bg-primary: #FFF5F6;
+    --bg-card: #FFFFFF;
+    --bg-card-subtle: #FFF0F3;
+    --border-subtle: #FED7E2;
+    --text-main: #4A1525;
+    --text-muted: #834758;
+    --accent-pink: #FF4D79;
+    --accent-deep: #B81846;
+    --accent-gold: #F59E0B;
+  }
+
+  /* Warm Cream Theme */
+  .theme-cream {
+    --bg-primary: #FAF6F0;
+    --bg-card: #FFFFFF;
+    --bg-card-subtle: #F5EFEB;
+    --border-subtle: #E8DCCF;
+    --text-main: #3D281F;
+    --text-muted: #7A5C4F;
+    --accent-pink: #E07A5F;
+    --accent-deep: #8D3B26;
+    --accent-gold: #D97706;
+  }
+
+  /* Romantic Rose Theme */
+  .theme-rose {
+    --bg-primary: #FFE8ED;
+    --bg-card: #FFF8F9;
+    --bg-card-subtle: #FFD4DE;
+    --border-subtle: #FBB6CE;
+    --text-main: #4A0E2E;
+    --text-muted: #7B3256;
+    --accent-pink: #E11D48;
+    --accent-deep: #9F1239;
+    --accent-gold: #F59E0B;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+}
+
+/* Custom fonts utility classes */
+.font-handwritten {
+  font-family: var(--font-handwritten), cursive;
+}
+
+.font-serif-romantic {
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+/* Floating animation */
+@keyframes gentle-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.92;
+  }
+}
+
+@keyframes ribbon-shimmer {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(255, 77, 121, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(255, 77, 121, 0.7));
+  }
+  100% {
+    filter: drop-shadow(0 0 4px rgba(255, 77, 121, 0.3));
+  }
+}
+
+.animate-gentle-float {
+  animation: gentle-float 4.5s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+.animate-ribbon-shimmer {
+  animation: ribbon-shimmer 2.5s ease-in-out infinite;
+}
+
+/* Polaroid Photo Card styling */
+.polaroid-card {
+  background: #ffffff;
+  padding: 12px 12px 20px 12px;
+  box-shadow: 0 10px 25px -5px rgba(74, 21, 37, 0.08), 0 8px 10px -6px rgba(74, 21, 37, 0.04);
+  border-radius: 4px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.polaroid-card:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* Scrapbook tape accent */
+.washi-tape {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 90px;
+  height: 22px;
+  background: rgba(255, 214, 224, 0.75);
+  backdrop-filter: blur(2px);
+  border-left: 2px dashed rgba(255, 255, 255, 0.8);
+  border-right: 2px dashed rgba(255, 255, 255, 0.8);
+  z-index: 10;
+}
+
+/* Paper letter texture overlay */
+.paper-texture {
+  background-color: #FFFDF9;
+  background-image: radial-gradient(#F7EAE1 0.75px, transparent 0.75px);
+  background-size: 14px 14px;
+}
+
+/* Wax Seal styling */
+.wax-seal {
+  background: radial-gradient(circle at 35% 35%, #FF6B8B, #C2185B, #880E4F);
+  box-shadow: 0 6px 16px rgba(136, 14, 79, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
