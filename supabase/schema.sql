@@ -36,12 +36,14 @@ CREATE INDEX IF NOT EXISTS idx_gifts_slug ON public.gifts(slug);
 ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read access to gifts by anyone who has the unique slug
+DROP POLICY IF EXISTS "Public read gifts by slug" ON public.gifts;
 CREATE POLICY "Public read gifts by slug" 
 ON public.gifts 
 FOR SELECT 
 USING (true);
 
 -- Allow public creation of new gifts
+DROP POLICY IF EXISTS "Public insert gifts" ON public.gifts;
 CREATE POLICY "Public insert gifts" 
 ON public.gifts 
 FOR INSERT 
@@ -54,12 +56,14 @@ VALUES ('gift-assets', 'gift-assets', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow public read of gift assets
+DROP POLICY IF EXISTS "Public read gift assets" ON storage.objects;
 CREATE POLICY "Public read gift assets" 
 ON storage.objects 
 FOR SELECT 
 USING (bucket_id = 'gift-assets');
 
 -- Allow public upload of gift assets
+DROP POLICY IF EXISTS "Public upload gift assets" ON storage.objects;
 CREATE POLICY "Public upload gift assets" 
 ON storage.objects 
 FOR INSERT 
