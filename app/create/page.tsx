@@ -115,6 +115,15 @@ export default function CreateGiftPage() {
         createdAt: new Date().toISOString(),
       };
 
+      try {
+        await fetch('/api/gifts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(finalGift),
+        });
+      } catch (e) {
+        console.warn('API route save warning:', e);
+      }
       await saveGiftToStorage(finalGift);
       clearDraft();
       setCreatedSlug(slug);

@@ -145,6 +145,11 @@ export default function BirthdayCreatorPage() {
     };
 
     try {
+      await fetch('/api/gifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newGift),
+      });
       await saveGiftToStorage(newGift);
     } catch {
       saveLocalGift(newGift);
