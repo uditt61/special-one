@@ -109,15 +109,17 @@ export async function saveGiftToStorage(gift: Gift): Promise<{ success: boolean;
       const record = mapToDbRecord(gift);
       const { error } = await supabase.from('gifts').insert([record]);
       if (error) {
-        console.warn('Supabase insert warning (saved locally):', error.message);
+        console.error('Supabase insert error:', error.message, error.details);
+        return { success: false, slug: gift.slug, error: error.message };
       }
+      return { success: true, slug: gift.slug };
+    } else {
+      console.warn('Supabase is not configured on this server instance (saved locally).');
+      return { success: false, slug: gift.slug, error: 'Supabase is not configured' };
     }
-
-    return { success: true, slug: gift.slug };
   } catch (err: any) {
-    console.warn('Error saving gift:', err);
-    // Draft/Gift is still saved in local storage
-    return { success: true, slug: gift.slug };
+    console.error('Error saving gift:', err);
+    return { success: false, slug: gift.slug, error: err?.message || 'Failed to save gift' };
   }
 }
 
